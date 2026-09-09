@@ -14,6 +14,7 @@ import java.util.UUID;
 @Service
 public class LinkService {
     private final LinkRepository linkRepository;
+
     public LinkService(LinkRepository linkRepository) {
         this.linkRepository = linkRepository;
     }
@@ -40,15 +41,16 @@ public class LinkService {
         Link savedLink = linkRepository.save(link);
         return new LinkResponse(
                 savedLink.getShortCode(),
-                savedLink.getOriginalUrl());
+                "http://localhost:8080/" + savedLink.getShortCode()
+        );
     }
 
     public Link getLinkByShortCode(String shortCode) {
             Link link = linkRepository.findByShortCode(shortCode)
-                    .orElseThrow(() -> new LinkNotFoundException("запись не найдена: " + shortCode)); //TODO:искл
+                    .orElseThrow(() -> new LinkNotFoundException("Link not found: " + shortCode));
             //проверить срок действия (expiresAt)
         if (link.getExpiresAt() != null && LocalDateTime.now().isAfter(link.getExpiresAt())){
-            throw new LinkExpiredException("Ccылка истекла:" + shortCode); //TODO:искл
+            throw new LinkExpiredException("Link expired: " + shortCode);
         }
         link.setClicks(link.getClicks() + 1);
         linkRepository.save(link);
@@ -58,17 +60,19 @@ public class LinkService {
     public LinkResponse getInfoByShortCode(String shortCode) {
         //найти
         Link link = linkRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new LinkNotFoundException("запись не найдена: " + shortCode)); //TODO:искл
+                .orElseThrow(() -> new LinkNotFoundException("Link not found: " + shortCode));
         //чек срок
         if (link.getExpiresAt() != null && LocalDateTime.now().isAfter(link.getExpiresAt())){
-            throw new LinkExpiredException("Ccылка истекла:" + shortCode); //TODO:искл
+            throw new LinkExpiredException("Link expired: " + shortCode);
         }
-        return new LinkResponse(link.getShortCode(), link.getOriginalUrl());
+        String shortUrl = "http://localhost:8080/" + link.getShortCode();
+        return new LinkResponse(link.getShortCode(), shortUrl);
     }
 
     public void deleteLink(String shortCode) {
         Link link = linkRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new LinkNotFoundException("запись не найдена: " + shortCode)); //TODO:искл
+                .orElseThrow(() -> new LinkNotFoundException("Link not found: " + shortCode));
         linkRepository.delete(link);
     }
+
 }
